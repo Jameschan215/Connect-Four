@@ -118,14 +118,17 @@ function GameController(
 		{
 			name: playerOneName,
 			token: 1,
+			won: false,
 		},
 		{
 			name: playerTwoName,
 			token: 2,
+			won: false,
 		},
 	];
 
 	let activePlayer = players[0];
+	let tie = false;
 
 	const switchPlayerTurn = () => {
 		activePlayer = activePlayer === players[0] ? players[1] : players[0];
@@ -203,10 +206,12 @@ function GameController(
 		/*  This is where we would check for a winner and handle that logic,
         such as a win message. */
 		if (checkWin(board.getBoard())) {
+			getActivePlayer().won = true;
 			board.printBoard();
 			console.log(`${getActivePlayer().name} won!`);
 			return;
 		} else if (checkTie(board.getBoard())) {
+			tie = true;
 			board.printBoard();
 			console.log("No more cells. It's a Tie!");
 			return;
@@ -224,7 +229,52 @@ function GameController(
 	return {
 		playRound,
 		getActivePlayer,
+		getBoard: board.getBoard,
 	};
 }
 
-const game = GameController();
+function ScreenController() {
+	const game = GameController();
+	const playerTurnDom = document.querySelector('.turn');
+	const boardDom = document.querySelector('.board');
+
+	const updateScreen = () => {
+		// Clear board
+		boardDom.innerHTML = '';
+
+		// Get newest version of board and player turn
+		const board = game.getBoard();
+		const activePlayer = game.getActivePlayer();
+
+		// Display player's turn
+		playerTurnDom.textContent = `${activePlayer.name}'s turn ...`;
+
+		// Render the board
+		board.forEach((row) => {
+			row.forEach((cell, index) => {
+				const cellDom = document.createElement('button');
+				cellDom.classList.add('cell');
+				cellDom.dataset.column = index;
+				cellDom.textContent = cell.getValue();
+				boardDom.appendChild(cellDom);
+			});
+		});
+	};
+
+	// Add listener for the board
+	function boardClickHandler(e) {
+		const selectedColumn = e.target.dataset.column;
+
+		// Make sure I've clicked the column, not the gap in between
+		if (!selectedColumn) return;
+
+		game.playRound(selectedColumn);
+		updateScreen();
+	}
+	boardDom.addEventListener('click', boardClickHandler);
+
+	// Initial render
+	updateScreen();
+}
+
+ScreenController();
